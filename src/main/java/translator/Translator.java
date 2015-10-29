@@ -1,5 +1,6 @@
 package translator;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,74 +16,53 @@ import static java.lang.Character.isAlphabetic;
  */
 
 public class Translator {
-
-    private static Map<String, String> vocabulary = new HashMap<>();
+    public static Map<String, String> adjectivesMap;
+    public static Map<String, String> singularNounsMap;
+    public static Map<String, String> pluralNounsMap;
+    public static Map<String, String> pastVerbsMap;
+    public static Map<String, String> presentVerbsMap;
+    public static Map<String, String> additionalVocabulary;
 
     public static void main(String[] args) throws IOException {
-        //addAdditionalVocabulary("vocabulary.txt");
-        //System.out.println(vocabulary);
-        createVocabulary(prepareText("dictionary.txt"));
+        initDictionary();
     }
 
-    public static void addAdditionalVocabulary(String filename) throws IOException {
+    public static void initDictionary() throws IOException {
+        adjectivesMap = addVocabulary("adjectives.txt");
+        singularNounsMap = addVocabulary("singular_nouns.txt");
+        pluralNounsMap = addVocabulary("plural_nouns.txt");
+        pastVerbsMap = addVocabulary("past_verbs.txt");
+        presentVerbsMap = addVocabulary("present_verbs.txt");
+        additionalVocabulary = addAdditionalVocabulary("vocabulary.txt");
+    }
+
+    // add -> read
+    public static Map<String, String> addVocabulary(String filename) throws IOException {
+        Map<String, String> result = new HashMap<>();
+        String file = ClassLoader.getSystemResource(filename).getPath();
+        Path path = Paths.get(file);
+        try (BufferedReader br = Files.newBufferedReader(path)) {
+            for (String line = br.readLine(); line != null; line = br.readLine()) {
+                String[] splitLine = line.split(" ");
+                for (int i = 1; i < splitLine.length; i++) {
+                    result.put(splitLine[i], splitLine[0]);
+                }
+            }
+            return result;
+        }
+    }
+
+    // add -> read
+    private static Map<String, String> addAdditionalVocabulary(String filename) throws IOException {
+        Map<String, String> result = new HashMap<>();
         String file = ClassLoader.getSystemResource(filename).getPath();
         Path path = Paths.get(file);
         List<String> lines = Files.readAllLines(path);
         for (String line : lines) {
-            for (int i = 0; i < line.split(" ").length; i++) {
-                vocabulary.put(line.split(" ")[0], line.split(" ")[1]);
-            }
+            String[] splitLine = line.split(";");
+            result.put(splitLine[0], splitLine[1]);
         }
-    }
-
-    private static List<String> prepareText(String filename) throws IOException {
-        String file = ClassLoader.getSystemResource(filename).getPath();
-        Path path = Paths.get(file);
-        List<String> text = Files.readAllLines(path);
-        for (Iterator<String> lineIterator = text.iterator(); lineIterator.hasNext();){
-            String currentLine = lineIterator.next();
-            if (currentLine.matches("^[0-9]*$")){
-                lineIterator.remove();
-            }
-        }
-        return text;
-    }
-
-    public static void createVocabulary(List<String> text) {
-        Map<String, List<String>> nounMap = new HashMap<>();
-        Map<String, String> adjectiveMap = new HashMap<>();
-        Map<String, List<String>> verbMap = new HashMap<>();
-        String previousLine = "";
-        StringBuilder initialForm = new StringBuilder();
-        for (String line : text) {
-            if (previousLine.equals("")){
-                initialForm.append(normalizedLine(line, 0));
-            }
-            if (normalizedLine(line, 1).equals("NOUN")){
-                List<String> characteristics = new ArrayList<>();
-                characteristics.add(initialForm.toString());
-                characteristics.add(normalizedLine(line, 4));
-                nounMap.put(normalizedLine(line, 0), characteristics);
-            }
-            if (normalizedLine(line, 1).equals("ADJF") || normalizedLine(line, 1).equals("PRTF")) {
-                adjectiveMap.put(normalizedLine(line, 0), initialForm.toString());
-            }
-            if (normalizedLine(line, 1).equals("VERB")){
-                List<String> characteristics = new ArrayList<>();
-                characteristics.add(initialForm.toString());
-                characteristics.add(normalizedLine(line, 5));
-                characteristics.add(normalizedLine(line, 6));
-                verbMap.put(normalizedLine(line, 0), characteristics);
-            }
-        }
-        System.out.println(nounMap);
-        System.out.println(adjectiveMap);
-        System.out.println(verbMap);
-
-    }
-
-    public static String normalizedLine (String line, int wordNumber){
-        return line.split("[ ,]+")[wordNumber];
+        return result;
     }
 
     public static List<String> splitText(String text) {
@@ -106,19 +86,55 @@ public class Translator {
 
     public static List<String> translateWords(List<String> words) {
         List<String> result = new ArrayList<>();
-        for (String word : words) {
+        for (int i = 0; i < words.size(); i++) {
+            boolean previousWordIsIn = false;
+            if (words.get(i).toLowerCase().equals("в") && i <= words.size() - 2 && words.get(i + 1).equals(" ")) {
+                if (singularNounsMap.containsKey(words.get(i + 2).toLowerCase())) {
+                    i += 2;
+                    previousWordIsIn = true;
+                }
+            }
+            String word = words.get(i);
+            // определять регистр
+            // убрать е при нормализации
             String normalizedWord = word.toLowerCase();
-            if (vocabulary.containsKey(normalizedWord)){
-                result.add(vocabulary.get(normalizedWord));
-            }
-            else {
-                result.add(word);
-            }
+            getTranslationFromVocabularies(normalizedWord, result, previousWordIsIn);
+            // вернуть регистр
         }
         return result;
     }
 
-    public static String concatenateWords (List<String> words) {
+    //    private static String getTranslationFromVocabularies(String word) {
+    // transformWord(getTranslationFromVocabularies)
+    private static void getTranslationFromVocabularies(String word, List<String> result, boolean previousWordIsIn) {
+        // проверить есть ли знак вопроса
+        if (additionalVocabulary.containsKey(word)) {
+            result.add(additionalVocabulary.get(word));
+        } else if (singularNounsMap.containsKey(word)) {
+            if (previousWordIsIn) {
+                // ... c ДА
+            } else {
+                // ... просто начальная форма
+            }
+        } else if (pluralNounsMap.containsKey(word)) {
+            result.add(transformWord(pluralNounsMap.get(word) + "лар"));
+        } else if (adjectivesMap.containsKey(word)) {
+            result.add(transformWord(adjectivesMap.get(word)));
+        } else if (pastVerbsMap.containsKey(word)) {
+            result.add(transformWord(pastVerbsMap.get(word) + " " + "итте"));
+        } else if (presentVerbsMap.containsKey(word)) {
+            result.add(transformWord(presentVerbsMap.get(word) + " итя"));
+        } else {
+            result.add(transformWord(word));
+        }
+    }
+
+    private static String transformWord(String word) {
+        // добавлять э
+        return word.replace("ш", "щ").replace("ч", "щ");
+    }
+
+    public static String concatenateWords(List<String> words) {
         StringBuilder text = new StringBuilder();
         for (String word : words) {
             text.append(word);
@@ -128,6 +144,10 @@ public class Translator {
 
     private enum CharType {
         ALPHABETIC, PUNCTUATION
+    }
+
+    private enum CASE {
+        LOWERCASE, UPPERCASE, CAPITALIZED, OTHER
     }
 }
 

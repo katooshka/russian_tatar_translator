@@ -16,8 +16,18 @@ import static translator.Translator.*;
  * Author: katooshka
  * Date: 10/24/15.
  */
-
-// TODO: разобраться в вопросительным знаком
+//TODO: рефакторинг
+//TODO: в зоопарк да
+//TODO: ?
+//TODO: кэран
+//TODO: дополнительные слова
+//TODO: if singular nouns
+//TODO: Loading
+//TODO: сохранять регистр
+    
+//TODO: добавить прокрутку в форму
+//TODO: Loading
+//TODO: сделать формочку не кривой
 
 public class TranslatorFrame {
     public static void main (String[] args) throws IOException {
@@ -25,6 +35,7 @@ public class TranslatorFrame {
     }
 
     public static void drawFrame() throws IOException {
+        //SwingUtilities.invokeLater()
         JFrame frame = new JFrame();
         frame.setPreferredSize(new Dimension(700, 400));
 
@@ -51,25 +62,30 @@ public class TranslatorFrame {
         JTextArea translatedText = new JTextArea();
         translatedText.setWrapStyleWord(true);
         translatedText.setLineWrap(true);
-        Translator.addAdditionalVocabulary("vocabulary.txt");
+
+        // убрать
+        long time = System.currentTimeMillis();
+        Translator.initDictionary();
+        System.out.println(System.currentTimeMillis() - time);
 
         initialText.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
-                String changededText = concatenateWords(translateWords(splitText(initialText.getText())));
-                translatedText.setText(changededText);
+                // вынести в отдельную функцию translate (во всех трех местах)
+                String changedText = concatenateWords(translateWords(splitText(initialText.getText())));
+                translatedText.setText(changedText);
             }
 
             @Override
             public void removeUpdate(DocumentEvent e) {
-                String changededText = concatenateWords(translateWords(splitText(initialText.getText())));
-                translatedText.setText(changededText);
+                String changedText = concatenateWords(translateWords(splitText(initialText.getText())));
+                translatedText.setText(changedText);
             }
 
             @Override
             public void changedUpdate(DocumentEvent e) {
-                String changededText = concatenateWords(translateWords(splitText(initialText.getText())));
-                translatedText.setText(changededText);
+                String changedText = concatenateWords(translateWords(splitText(initialText.getText())));
+                translatedText.setText(changedText);
             }
         });
 
@@ -101,12 +117,6 @@ public class TranslatorFrame {
         frame.pack();
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
-        //translateText(textToTranslate);
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
     }
-
-    public static void translateText(String text){
-        System.out.println(text);
-    }
-
 }
