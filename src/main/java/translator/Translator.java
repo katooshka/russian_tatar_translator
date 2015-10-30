@@ -2,6 +2,8 @@ package translator;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -40,9 +42,8 @@ public class Translator {
 
     public static Map<String, String> readVocabulary(String filename) throws IOException {
         Map<String, String> result = new HashMap<>();
-        String file = ClassLoader.getSystemResource(filename).getPath();
-        Path path = Paths.get(file);
-        try (BufferedReader br = Files.newBufferedReader(path)) {
+        InputStream inputStream = ClassLoader.getSystemResourceAsStream(filename);
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(inputStream))) {
             for (String line = br.readLine(); line != null; line = br.readLine()) {
                 String[] splitLine = line.split(" ");
                 for (int i = 1; i < splitLine.length; i++) {
@@ -55,14 +56,14 @@ public class Translator {
 
     private static Map<String, String> readAdditionalVocabulary(String filename) throws IOException {
         Map<String, String> result = new HashMap<>();
-        String file = ClassLoader.getSystemResource(filename).getPath();
-        Path path = Paths.get(file);
-        List<String> lines = Files.readAllLines(path);
-        for (String line : lines) {
-            String[] splitLine = line.split(";");
-            result.put(splitLine[0], splitLine[1]);
+        InputStream inputStream = ClassLoader.getSystemResourceAsStream(filename);
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(inputStream))) {
+            for (String line = br.readLine(); line != null; line = br.readLine()) {
+                String[] splitLine = line.split(";");
+                result.put(splitLine[0], splitLine[1]);
+            }
+            return result;
         }
-        return result;
     }
 
     public static String doTranslation(String text) {
@@ -101,7 +102,7 @@ public class Translator {
                 }
             }
             String word = words.get(i);
-            CASE currentCase = defineCase(word);
+            Case currentCase = defineCase(word);
             String normalizedWord = word.toLowerCase().replace("ё", "е");
             String translatedWord = transformWord(getTranslationFromVocabularies(normalizedWord, previousWordIsIn));
             translatedWord = setCase(currentCase, translatedWord);
@@ -126,7 +127,7 @@ public class Translator {
         return NOT_CONSONANT.indexOf(ch) == -1 && Character.isAlphabetic(ch);
     }
 
-    private static CASE defineCase(String word) {
+    private static Case defineCase(String word) {
         int upperCase = 0;
         for (int i = 0; i < word.length(); i++) {
             if (Character.isUpperCase(word.charAt(i))) {
@@ -134,20 +135,20 @@ public class Translator {
             }
         }
         if (Character.isUpperCase(word.charAt(0)) && upperCase == 1) {
-            return CASE.CAPITALIZED;
+            return Case.CAPITALIZED;
         } else if (upperCase == 0) {
-            return CASE.LOWERCASE;
+            return Case.LOWERCASE;
         } else if (upperCase == word.length()) {
-            return CASE.UPPERCASE;
+            return Case.UPPERCASE;
         } else {
-            return CASE.OTHER;
+            return Case.OTHER;
         }
     }
 
-    private static String setCase(CASE currentCase, String word) {
-        if (currentCase == CASE.CAPITALIZED) {
+    private static String setCase(Case currentCase, String word) {
+        if (currentCase == Case.CAPITALIZED) {
             return Character.toString(word.charAt(0)).toUpperCase() + word.substring(1);
-        } else if (currentCase == CASE.UPPERCASE) {
+        } else if (currentCase == Case.UPPERCASE) {
             return word.toUpperCase();
         } else {
             return word;
@@ -203,7 +204,7 @@ public class Translator {
         ALPHABETIC, PUNCTUATION
     }
 
-    private enum CASE {
+    private enum Case {
         LOWERCASE, UPPERCASE, CAPITALIZED, OTHER
     }
 }

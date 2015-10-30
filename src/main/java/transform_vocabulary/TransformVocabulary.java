@@ -6,7 +6,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import static java.lang.System.currentTimeMillis;
 
@@ -103,7 +106,7 @@ public class TransformVocabulary {
 
     private static void addToMap(Map<String, Set<String>> map, String initialForm, String word) {
         if (!map.containsKey(initialForm)) {
-            map.put(initialForm, new HashSet<>());
+            map.put(initialForm, new HashSet<String>());
         }
         map.get(initialForm).add(word);
     }

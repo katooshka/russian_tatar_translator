@@ -7,7 +7,6 @@ import javax.swing.border.TitledBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
-import java.io.IOException;
 
 import static java.awt.Font.BOLD;
 import static java.awt.Font.PLAIN;
@@ -20,7 +19,12 @@ import static translator.Translator.doTranslation;
 
 public class TranslatorFrame {
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(TranslatorFrame::drawFrame);
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                drawFrame();
+            }
+        });
     }
 
     public static void drawFrame() {
@@ -36,11 +40,11 @@ public class TranslatorFrame {
         Font nameFont = new Font("Verdana", BOLD, 18);
         Font languageNameFont = new Font("Verdana", PLAIN, 14);
 
-        JTextArea initialText = new JTextArea();
+        final JTextArea initialText = new JTextArea();
         initialText.setWrapStyleWord(true);
         initialText.setLineWrap(true);
 
-        JTextArea translatedText = new JTextArea();
+        final JTextArea translatedText = new JTextArea();
         translatedText.setWrapStyleWord(true);
         translatedText.setLineWrap(true);
         translatedText.setEditable(false);
