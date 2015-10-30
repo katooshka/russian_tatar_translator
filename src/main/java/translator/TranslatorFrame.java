@@ -9,28 +9,22 @@ import java.io.IOException;
 
 import static java.awt.Font.BOLD;
 import static java.awt.Font.ITALIC;
-import static javax.swing.SwingConstants.*;
-import static translator.Translator.*;
+import static javax.swing.SwingConstants.CENTER;
+import static translator.Translator.doTranslation;
 
 /**
  * Author: katooshka
  * Date: 10/24/15.
  */
-//TODO: рефакторинг
-//TODO: в зоопарк да
 //TODO: ?
-//TODO: кэран
 //TODO: дополнительные слова
-//TODO: if singular nouns
-//TODO: Loading
-//TODO: сохранять регистр
-    
+
 //TODO: добавить прокрутку в форму
 //TODO: Loading
 //TODO: сделать формочку не кривой
 
 public class TranslatorFrame {
-    public static void main (String[] args) throws IOException {
+    public static void main(String[] args) throws IOException {
         drawFrame();
     }
 
@@ -63,28 +57,24 @@ public class TranslatorFrame {
         translatedText.setWrapStyleWord(true);
         translatedText.setLineWrap(true);
 
-        // убрать
-        long time = System.currentTimeMillis();
         Translator.initDictionary();
-        System.out.println(System.currentTimeMillis() - time);
 
         initialText.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
-                // вынести в отдельную функцию translate (во всех трех местах)
-                String changedText = concatenateWords(translateWords(splitText(initialText.getText())));
+                String changedText = doTranslation(initialText.getText());
                 translatedText.setText(changedText);
             }
 
             @Override
             public void removeUpdate(DocumentEvent e) {
-                String changedText = concatenateWords(translateWords(splitText(initialText.getText())));
+                String changedText = doTranslation(initialText.getText());
                 translatedText.setText(changedText);
             }
 
             @Override
             public void changedUpdate(DocumentEvent e) {
-                String changedText = concatenateWords(translateWords(splitText(initialText.getText())));
+                String changedText = doTranslation(initialText.getText());
                 translatedText.setText(changedText);
             }
         });

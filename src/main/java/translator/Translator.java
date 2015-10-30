@@ -8,6 +8,7 @@ import java.nio.file.Paths;
 import java.util.*;
 
 import static java.lang.Character.isAlphabetic;
+import static java.util.Collections.emptyList;
 
 
 /**
@@ -16,6 +17,8 @@ import static java.lang.Character.isAlphabetic;
  */
 
 public class Translator {
+    private static final String NOT_CONSONANT = "уеыаоэёяиюъьй";
+
     public static Map<String, String> adjectivesMap;
     public static Map<String, String> singularNounsMap;
     public static Map<String, String> pluralNounsMap;
@@ -23,21 +26,16 @@ public class Translator {
     public static Map<String, String> presentVerbsMap;
     public static Map<String, String> additionalVocabulary;
 
-    public static void main(String[] args) throws IOException {
-        initDictionary();
-    }
-
     public static void initDictionary() throws IOException {
-        adjectivesMap = addVocabulary("adjectives.txt");
-        singularNounsMap = addVocabulary("singular_nouns.txt");
-        pluralNounsMap = addVocabulary("plural_nouns.txt");
-        pastVerbsMap = addVocabulary("past_verbs.txt");
-        presentVerbsMap = addVocabulary("present_verbs.txt");
-        additionalVocabulary = addAdditionalVocabulary("vocabulary.txt");
+        adjectivesMap = readVocabulary("adjectives.txt");
+        singularNounsMap = readVocabulary("singular_nouns.txt");
+        pluralNounsMap = readVocabulary("plural_nouns.txt");
+        pastVerbsMap = readVocabulary("past_verbs.txt");
+        presentVerbsMap = readVocabulary("present_verbs.txt");
+        additionalVocabulary = readAdditionalVocabulary("vocabulary.txt");
     }
 
-    // add -> read
-    public static Map<String, String> addVocabulary(String filename) throws IOException {
+    public static Map<String, String> readVocabulary(String filename) throws IOException {
         Map<String, String> result = new HashMap<>();
         String file = ClassLoader.getSystemResource(filename).getPath();
         Path path = Paths.get(file);
@@ -52,8 +50,7 @@ public class Translator {
         }
     }
 
-    // add -> read
-    private static Map<String, String> addAdditionalVocabulary(String filename) throws IOException {
+    private static Map<String, String> readAdditionalVocabulary(String filename) throws IOException {
         Map<String, String> result = new HashMap<>();
         String file = ClassLoader.getSystemResource(filename).getPath();
         Path path = Paths.get(file);
@@ -65,7 +62,12 @@ public class Translator {
         return result;
     }
 
+    public static String doTranslation(String text) {
+        return concatenateWords(translateWords(splitText(text)));
+    }
+
     public static List<String> splitText(String text) {
+        if (text.isEmpty()) return emptyList();
         List<String> result = new ArrayList<>();
         StringBuilder currentWordChars = new StringBuilder();
         CharType lastCharType = null;
@@ -88,50 +90,96 @@ public class Translator {
         List<String> result = new ArrayList<>();
         for (int i = 0; i < words.size(); i++) {
             boolean previousWordIsIn = false;
-            if (words.get(i).toLowerCase().equals("в") && i <= words.size() - 2 && words.get(i + 1).equals(" ")) {
-                if (singularNounsMap.containsKey(words.get(i + 2).toLowerCase())) {
+            if (words.get(i).toLowerCase().equals("в") && i < words.size() - 2 && words.get(i + 1).equals(" ")) {
+                String possibleNoun = words.get(i + 2).toLowerCase();
+                if (singularNounsMap.containsKey(possibleNoun) || pluralNounsMap.containsKey(possibleNoun)) {
                     i += 2;
                     previousWordIsIn = true;
                 }
             }
             String word = words.get(i);
-            // определять регистр
-            // убрать е при нормализации
-            String normalizedWord = word.toLowerCase();
-            getTranslationFromVocabularies(normalizedWord, result, previousWordIsIn);
-            // вернуть регистр
+            CASE currentCase = defineCase(word);
+            String normalizedWord = word.toLowerCase().replace("ё", "е");
+            String translatedWord = transformWord(getTranslationFromVocabularies(normalizedWord, previousWordIsIn));
+            translatedWord = setCase(currentCase, translatedWord);
+            result.add(translatedWord);
         }
         return result;
     }
 
-    //    private static String getTranslationFromVocabularies(String word) {
-    // transformWord(getTranslationFromVocabularies)
-    private static void getTranslationFromVocabularies(String word, List<String> result, boolean previousWordIsIn) {
+    private static String enterVowels(String word) {
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < word.length() - 1; i++) {
+            result.append(word.charAt(i));
+            if (isConsonant(word.charAt(i)) && isConsonant(word.charAt(i + 1)) && word.charAt(i) != word.charAt(i + 1)) {
+                result.append("э");
+            }
+        }
+        result.append(word.charAt(word.length() - 1));
+        return result.toString();
+    }
+
+    private static boolean isConsonant(char ch) {
+        return NOT_CONSONANT.indexOf(ch) == -1 && Character.isAlphabetic(ch);
+    }
+
+    private static CASE defineCase(String word) {
+        int upperCase = 0;
+        for (int i = 0; i < word.length(); i++) {
+            if (Character.isUpperCase(word.charAt(i))) {
+                upperCase++;
+            }
+        }
+        if (Character.isUpperCase(word.charAt(0)) && upperCase == 1) {
+            return CASE.CAPITALIZED;
+        } else if (upperCase == 0) {
+            return CASE.LOWERCASE;
+        } else if (upperCase == word.length()) {
+            return CASE.UPPERCASE;
+        } else {
+            return CASE.OTHER;
+        }
+    }
+
+    private static String setCase(CASE currentCase, String word) {
+        if (currentCase == CASE.CAPITALIZED) {
+            return Character.toString(word.charAt(0)).toUpperCase() + word.substring(1);
+        } else if (currentCase == CASE.UPPERCASE) {
+            return word.toUpperCase();
+        } else {
+            return word;
+        }
+    }
+
+    private static String getTranslationFromVocabularies(String word, boolean previousWordIsIn) {
         // проверить есть ли знак вопроса
         if (additionalVocabulary.containsKey(word)) {
-            result.add(additionalVocabulary.get(word));
+            return additionalVocabulary.get(word);
         } else if (singularNounsMap.containsKey(word)) {
             if (previousWordIsIn) {
-                // ... c ДА
+                return singularNounsMap.get(word) + "да";
             } else {
-                // ... просто начальная форма
+                return singularNounsMap.get(word);
             }
         } else if (pluralNounsMap.containsKey(word)) {
-            result.add(transformWord(pluralNounsMap.get(word) + "лар"));
+            if (previousWordIsIn) {
+                return pluralNounsMap.get(word) + "ларда";
+            } else {
+                return pluralNounsMap.get(word) + "лар";
+            }
         } else if (adjectivesMap.containsKey(word)) {
-            result.add(transformWord(adjectivesMap.get(word)));
+            return adjectivesMap.get(word);
         } else if (pastVerbsMap.containsKey(word)) {
-            result.add(transformWord(pastVerbsMap.get(word) + " " + "итте"));
+            return pastVerbsMap.get(word) + " итте";
         } else if (presentVerbsMap.containsKey(word)) {
-            result.add(transformWord(presentVerbsMap.get(word) + " итя"));
+            return presentVerbsMap.get(word) + " итя";
         } else {
-            result.add(transformWord(word));
+            return word;
         }
     }
 
     private static String transformWord(String word) {
-        // добавлять э
-        return word.replace("ш", "щ").replace("ч", "щ");
+        return enterVowels(word).replace("ш", "щ").replace("ч", "щ");
     }
 
     public static String concatenateWords(List<String> words) {
