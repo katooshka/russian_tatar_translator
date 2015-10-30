@@ -2,52 +2,39 @@ package translator;
 
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.TitledBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.io.IOException;
 
 import static java.awt.Font.BOLD;
-import static java.awt.Font.ITALIC;
-import static javax.swing.SwingConstants.CENTER;
+import static java.awt.Font.PLAIN;
 import static translator.Translator.doTranslation;
 
 /**
  * Author: katooshka
  * Date: 10/24/15.
  */
-//TODO: ?
-//TODO: дополнительные слова
-
-//TODO: добавить прокрутку в форму
-//TODO: Loading
-//TODO: сделать формочку не кривой
 
 public class TranslatorFrame {
-    public static void main(String[] args) throws IOException {
-        drawFrame();
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(TranslatorFrame::drawFrame);
     }
 
-    public static void drawFrame() throws IOException {
-        //SwingUtilities.invokeLater()
+    public static void drawFrame() {
+        try {
+            Translator.initDictionary();
+        } catch (Exception e) {
+            System.err.println("Failed to load dictionary");
+            return;
+        }
         JFrame frame = new JFrame();
         frame.setPreferredSize(new Dimension(700, 400));
 
-        JPanel translatorNamePanel = new JPanel();
-        translatorNamePanel.setLayout(new FlowLayout(FlowLayout.CENTER, 0, 50));
-        JLabel translatorName = new JLabel("Русско-татарский переводчик");
-        translatorNamePanel.add(translatorName);
         Font nameFont = new Font("Verdana", BOLD, 18);
-        translatorName.setFont(nameFont);
-        translatorName.setVerticalAlignment(CENTER);
-        translatorName.setHorizontalAlignment(CENTER);
-
-        Font languageNameFont = new Font("Verdana", ITALIC, 14);
-        JLabel initialLanguage = new JLabel("Русский");
-        initialLanguage.setFont(languageNameFont);
-        JLabel translationLanguage = new JLabel("Татарский");
-        translationLanguage.setFont(languageNameFont);
-
+        Font languageNameFont = new Font("Verdana", PLAIN, 14);
 
         JTextArea initialText = new JTextArea();
         initialText.setWrapStyleWord(true);
@@ -56,8 +43,7 @@ public class TranslatorFrame {
         JTextArea translatedText = new JTextArea();
         translatedText.setWrapStyleWord(true);
         translatedText.setLineWrap(true);
-
-        Translator.initDictionary();
+        translatedText.setEditable(false);
 
         initialText.getDocument().addDocumentListener(new DocumentListener() {
             @Override
@@ -79,31 +65,29 @@ public class TranslatorFrame {
             }
         });
 
+
         JPanel initialTextPanel = new JPanel();
-        initialTextPanel.setBorder(BorderFactory.createEmptyBorder(0, 20, 10, 10));
-        initialTextPanel.setLayout(new GridLayout(2, 1, 0, 0));
-        initialTextPanel.add(initialLanguage);
-        initialLanguage.setHorizontalAlignment(CENTER);
-        initialTextPanel.add(initialText);
+        JScrollPane initialTextScrollPane = new JScrollPane(initialText);
+        initialTextPanel.setLayout(new BorderLayout(20, 20));
+        initialTextPanel.setBorder(BorderFactory.createTitledBorder(new EmptyBorder(5, 5, 5, 5),
+                "Русский", TitledBorder.CENTER, TitledBorder.ABOVE_TOP, languageNameFont));
+        initialTextPanel.add(initialTextScrollPane, BorderLayout.CENTER);
 
         JPanel translatedTextPanel = new JPanel();
-        translatedTextPanel.setBorder(BorderFactory.createEmptyBorder(0, 10, 10, 20));
-        translatedTextPanel.setLayout(new GridLayout(2, 1, 0, 0));
-        translatedTextPanel.add(translationLanguage);
-        translationLanguage.setHorizontalAlignment(CENTER);
-        translatedTextPanel.add(translatedText);
+        JScrollPane translatedTextScrollPane = new JScrollPane(translatedText);
+        translatedTextPanel.setLayout(new BorderLayout(20, 20));
+        translatedTextPanel.setBorder(BorderFactory.createTitledBorder(new EmptyBorder(5, 5, 5, 5),
+                "Татарский", TitledBorder.CENTER, TitledBorder.ABOVE_TOP, languageNameFont));
+        translatedTextPanel.add(translatedTextScrollPane);
 
         JPanel texts = new JPanel();
-        texts.setLayout(new GridLayout(1, 2, 0, 0));
+        texts.setLayout(new GridLayout(1, 2, 20, 20));
         texts.add(initialTextPanel);
         texts.add(translatedTextPanel);
+        texts.setBorder(BorderFactory.createTitledBorder(new EmptyBorder(5, 5, 5, 5),
+                "Русско-татарский переводчик", TitledBorder.CENTER, TitledBorder.ABOVE_TOP, nameFont));
 
-        JLabel allComponents = new JLabel();
-        allComponents.setLayout(new BorderLayout(20, 0));
-        allComponents.add(translatorNamePanel, BorderLayout.NORTH);
-        allComponents.add(texts, BorderLayout.CENTER);
-
-        frame.setContentPane(allComponents);
+        frame.setContentPane(texts);
         frame.pack();
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);

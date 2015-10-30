@@ -5,7 +5,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static java.lang.Character.isAlphabetic;
 import static java.util.Collections.emptyList;
@@ -152,29 +155,35 @@ public class Translator {
     }
 
     private static String getTranslationFromVocabularies(String word, boolean previousWordIsIn) {
-        // проверить есть ли знак вопроса
-        if (additionalVocabulary.containsKey(word)) {
-            return additionalVocabulary.get(word);
-        } else if (singularNounsMap.containsKey(word)) {
+        if (word.contains("?")) {
+            return " мы" + word;
+        }
+        String result;
+        if (singularNounsMap.containsKey(word)) {
             if (previousWordIsIn) {
-                return singularNounsMap.get(word) + "да";
+                result = singularNounsMap.get(word) + "да";
             } else {
-                return singularNounsMap.get(word);
+                result = singularNounsMap.get(word);
             }
         } else if (pluralNounsMap.containsKey(word)) {
             if (previousWordIsIn) {
-                return pluralNounsMap.get(word) + "ларда";
+                result = pluralNounsMap.get(word) + "ларда";
             } else {
-                return pluralNounsMap.get(word) + "лар";
+                result = pluralNounsMap.get(word) + "лар";
             }
         } else if (adjectivesMap.containsKey(word)) {
-            return adjectivesMap.get(word);
+            result = adjectivesMap.get(word);
         } else if (pastVerbsMap.containsKey(word)) {
-            return pastVerbsMap.get(word) + " итте";
+            result = pastVerbsMap.get(word) + " итте";
         } else if (presentVerbsMap.containsKey(word)) {
-            return presentVerbsMap.get(word) + " итя";
+            result = presentVerbsMap.get(word) + " итя";
         } else {
-            return word;
+            result = word;
+        }
+        if (additionalVocabulary.containsKey(result)) {
+            return additionalVocabulary.get(result);
+        } else {
+            return result;
         }
     }
 
