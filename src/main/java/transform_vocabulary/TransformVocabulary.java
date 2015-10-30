@@ -114,7 +114,7 @@ public class TransformVocabulary {
                 String initialForm = entry.getKey();
                 Set<String> forms = entry.getValue();
                 String line = initialForm + " " + String.join(" ", forms);
-                bw.write(line.toLowerCase().replace("ё", "e"));
+                bw.write(line.toLowerCase().replace("ё", "е"));
                 bw.newLine();
             }
         }
