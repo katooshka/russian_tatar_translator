@@ -17,7 +17,7 @@ import static java.lang.System.currentTimeMillis;
  * Author: katooshka
  * Date: 10/27/15.
  */
-public class TransformVocabulary {
+public class VocabularyTransformator {
     static Map<String, Set<String>> singularNouns = new HashMap<>();
     static Map<String, Set<String>> pluralNouns = new HashMap<>();
     static Map<String, Set<String>> adjectives = new HashMap<>();
