@@ -5,122 +5,97 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.sql.*;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Author: katooshka
  * Date: 1/13/16.
  */
+// TransferToDatabase
 public class DatabaseConnector {
 
-    public static Connection connection = null;
-
-    //TODO: вынести коннекшн в отдельный файл
+    //TODO: вынести константы
 
     public static void main(String[] args) throws ClassNotFoundException, SQLException, IOException {
-        try {
-            Class.forName("com.mysql.jdbc.Driver");
-            connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/vocabulary", "translator", "3705352rfnz");
-            putVocabularyIntoDatabase("past_verbs.txt", "past_verbs");
-            printAllFromTable(connection);
-        } finally {
-            if (connection != null) {
-                connection.close();
+        Class.forName("com.mysql.jdbc.Driver");
+        try (Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/vocabulary", "translator", "3705352rfnz")) {
+            if (tableExists(connection)) {
+                dropTable(connection);
             }
+            createTable(connection);
+            putVocabularyIntoDatabase(connection, "exact_translation.txt", "ExactTranslation");
+            putVocabularyIntoDatabase(connection, "singular_nouns.txt", "SingNoun");
+            putVocabularyIntoDatabase(connection, "plural_nouns.txt", "PlurNoun");
+            putVocabularyIntoDatabase(connection, "present_verbs.txt", "PresVerb");
+            putVocabularyIntoDatabase(connection, "past_verbs.txt", "PastVerb");
+            putVocabularyIntoDatabase(connection, "adjectives.txt", "Adjective");
         }
     }
 
-    public static void putVocabularyIntoDatabase(String filename, String word_type) throws IOException, SQLException {
-        if (tableExists()) {
-            dropTable();
-        }
-        createTable();
+    public static void putVocabularyIntoDatabase(Connection connection, String filename, String wordType) throws IOException, SQLException {
         InputStream inputStream = ClassLoader.getSystemResourceAsStream(filename);
         try (BufferedReader br = new BufferedReader(new InputStreamReader(inputStream))) {
             for (String line = br.readLine(); line != null; line = br.readLine()) {
                 String[] splitLine = line.split(" ");
-                    putStringIntoDatabase(splitLine, word_type);
+                putStringIntoDatabase(connection, splitLine, splitLine[0], wordType);
             }
         }
     }
 
-    private static boolean tableExists() throws SQLException {
+    private static boolean tableExists(Connection connection) throws SQLException {
+        // закрывать здесь и дальше
         String query = "SHOW TABLES LIKE 'T_DICTIONARY'";
-        PreparedStatement preparedStatement = connection.prepareStatement(query);
-        return preparedStatement.executeUpdate() != 0;
+            PreparedStatement preparedStatement = connection.prepareStatement(query);
+        ResultSet resultSet = preparedStatement.executeQuery();
+        return resultSet.next();
     }
 
-    private static void dropTable() throws SQLException {
+    private static void dropTable(Connection connection) throws SQLException {
         String query = "DROP TABLE T_DICTIONARY";
         PreparedStatement preparedStatement = connection.prepareStatement(query);
         preparedStatement.executeUpdate();
     }
 
-    private static void createTable() throws SQLException {
-        String query = "CREATE TABLE T_DICTIONARY ( " +
-                "WORD varchar(50) NOT NULL, INITIAL_FORM varchar(50) NOT NULL, " +
-                "WORD_TYPE varchar(50) NOT NULL, UNIQUE KEY(WORD))";
+    private static void createTable(Connection connection) throws SQLException {
+        String query = "CREATE TABLE T_DICTIONARY (" +
+                "WORD VARCHAR(50) NOT NULL, " +
+                "INITIAL_FORM VARCHAR(50) NOT NULL, " +
+                "WORD_TYPE VARCHAR(50) NOT NULL, " +
+                "UNIQUE KEY(WORD))";
         PreparedStatement preparedStatement = connection.prepareStatement(query);
         preparedStatement.executeUpdate();
     }
 
-    private static void putStringIntoDatabase(String[] words, String word_type) throws SQLException {
-        for (int i = 0; i < words.length; i++) {
-            if (!wordExists(words[i])) {
+
+// понять почему вынесли initialForm
+
+    private static void putStringIntoDatabase(Connection connection, String[] words, String initialForm, String word_type) throws SQLException {
+        for (int i = 0; i < words.length; i++) { // заменить тип цикла
+            boolean exists = wordExists(connection, words[i]);
+            if (!exists) {
+                // именованные параметры, скинул линк в вк
                 String insertionQuery = "INSERT INTO T_DICTIONARY (WORD, INITIAL_FORM, WORD_TYPE) VALUES (?, ?, ?)";
                 PreparedStatement preparedStatement = connection.prepareStatement(insertionQuery);
                 preparedStatement.setString(1, words[i]);
-                preparedStatement.setString(2, words[0]);
+                preparedStatement.setString(2, initialForm);
                 preparedStatement.setString(3, word_type);
                 preparedStatement.executeUpdate();
-                printAllFromTable(connection);
+                // try
+                preparedStatement.close();
             }
         }
     }
 
-    private static boolean wordExists(String word) throws SQLException {
-//        try {
-            String query = "SELECT * FROM T_DICTIONARY WHERE WORD = ?";
-            PreparedStatement preparedStatement = connection.prepareStatement(query);
-            preparedStatement.setString(1, word);
-            ResultSet result = preparedStatement.executeQuery();
-            if (result != null) {
-                return true;
-            } else return false;
-//        } catch (NullPointerException e) {
-//            return false;
-//        }
-
-    }
-
-    private static void printAllFromTable(Connection connection) throws SQLException {
-        Statement statement = connection.createStatement();
-        ResultSet result = statement.executeQuery("SELECT * FROM T_DICTIONARY");
-        while (result.next()) {
-            String sentence = result.getString("WORD");
-            String author = result.getString("INITIAL_FORM");
-            String tag = result.getString("WORD_TYPE");
-
-            System.out.println("1 : " + sentence);
-            System.out.println("2 : " + author);
-            System.out.println("3 : " + tag);
-            System.out.println();
-        }
-    }
-
-    private static void executeInsertions(Connection connection) throws SQLException {
-        insertNewRow(connection,
-                "a",
-                "b", "c");
-    }
-
-    private static void insertNewRow(Connection connection, String word, String inf, String type) throws SQLException {
-        String insertionQuery = "INSERT INTO T_DICTIONARY (WORD, INITIAL_FORM, WORD_TYPE) VALUES (?, ?, ?)";
-        PreparedStatement preparedStatement = connection.prepareStatement(insertionQuery);
+    private static boolean wordExists(Connection connection, String word) throws SQLException {
+        // именованный парамет
+        String query = "SELECT * FROM T_DICTIONARY WHERE WORD = ?";
+        PreparedStatement preparedStatement = connection.prepareStatement(query);
         preparedStatement.setString(1, word);
-        preparedStatement.setString(2, inf);
-        preparedStatement.setString(3, type);
-        preparedStatement.executeUpdate();
+        ResultSet result = preparedStatement.executeQuery();
+        boolean answer = result.next();
+        result.close();
+        preparedStatement.close();
+        return answer;
+        //  try (даже 2)
     }
+
 }

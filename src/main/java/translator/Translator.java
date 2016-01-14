@@ -4,9 +4,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -37,7 +34,7 @@ public class Translator {
         pluralNounsMap = readVocabulary("plural_nouns.txt");
         pastVerbsMap = readVocabulary("past_verbs.txt");
         presentVerbsMap = readVocabulary("present_verbs.txt");
-        additionalVocabulary = readAdditionalVocabulary("vocabulary.txt");
+        additionalVocabulary = readAdditionalVocabulary("exact_translation.txt");
     }
 
     public static Map<String, String> readVocabulary(String filename) throws IOException {
