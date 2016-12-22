@@ -10,7 +10,7 @@ In order to make the program understand parts of speech and grammatical gender I
 
 ![translator_demo](https://cloud.githubusercontent.com/assets/14299978/21399643/4975a7c2-c7a4-11e6-8935-16cbdb85ce71.gif)
 
-**Install**
+**Launch**
 
 ```
 $ git clone git@github.com:katooshka/russian_tatar_translator.git
